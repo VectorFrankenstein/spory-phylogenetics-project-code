@@ -9,11 +9,6 @@ while test $# -gt 0; do
         input=$1
         shift
         ;;
-    --output)
-        shift
-        output=$1
-        shift
-        ;;
     --move_done)
         shift
         move_done=$1
@@ -27,10 +22,14 @@ while test $# -gt 0; do
   esac
 done
 
+export output
+export move_done
+
+# Store sorted file names into an array
+files=($(ls -Sr $input/*.fa))
+
+# Use the array for parallel processing
 parallel -j $threads '
-  base_name=$(basename -- {}); \
-  base_name="${base_name%.*}"; \
-  final_output_name="'$output'/${base_name}.tre" \
-  iqtree2 -s {} -m MFP --quiet > $final_output_name \
-  mv {} "'$move_done'/" \ 
-' ::: $input/*
+  iqtree2 -s {} -m MFP --quiet; \
+  mv "$input/{}" "$move_done/" \
+' ::: "${files[@]}"
